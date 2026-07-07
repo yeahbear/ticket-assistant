@@ -1,0 +1,49 @@
+CREATE TABLE IF NOT EXISTS chat_session (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(100) NOT NULL,
+    user_code VARCHAR(64) NOT NULL DEFAULT 'demo-user',
+    deleted TINYINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_message (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    session_id BIGINT NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_chat_message_session_id (session_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ticket_order (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_no VARCHAR(40) NOT NULL UNIQUE,
+    passenger_name VARCHAR(50) NOT NULL,
+    id_card VARCHAR(32) NOT NULL,
+    train_no VARCHAR(20) NOT NULL,
+    travel_date DATE NOT NULL,
+    seat_type VARCHAR(20) NOT NULL,
+    seat_no VARCHAR(20) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    book_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    refund_time DATETIME NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ticket_order_passenger (passenger_name, id_card),
+    INDEX idx_ticket_order_order_no (order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS refund_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_no VARCHAR(40) NOT NULL,
+    passenger_name VARCHAR(50) NOT NULL,
+    id_card VARCHAR(32) NOT NULL,
+    fee_rate DECIMAL(5,2) NOT NULL,
+    refund_fee DECIMAL(10,2) NOT NULL,
+    refund_amount DECIMAL(10,2) NOT NULL,
+    reason VARCHAR(200) NOT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_refund_order_no (order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

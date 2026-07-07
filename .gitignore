@@ -1,0 +1,11 @@
+.env.local
+.tools/
+target/
+*.log
+.idea/
+.agents/
+.git.invalid-backup/
+yuque_image_assets/
+yuque_*.json
+generate_yuque*.py
+*.docx

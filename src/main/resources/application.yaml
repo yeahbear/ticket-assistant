@@ -1,0 +1,38 @@
+server:
+  port: 19999
+
+spring:
+  application:
+    name: ticket-assistant
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ticket_assistant}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: true
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+ai:
+  deepseek:
+    api-key: ${DEEPSEEK_API_KEY:}
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1/chat/completions}
+    model: ${DEEPSEEK_MODEL:deepseek-chat}
+    local-fallback: ${AI_LOCAL_FALLBACK:true}
+    timeout-seconds: ${DEEPSEEK_TIMEOUT_SECONDS:20}
+
+weather:
+  qweather:
+    api-key: ${QWEATHER_API_KEY:}
+    api-host: ${QWEATHER_API_HOST:https://devapi.qweather.com}
+    timeout-seconds: ${QWEATHER_TIMEOUT_SECONDS:8}

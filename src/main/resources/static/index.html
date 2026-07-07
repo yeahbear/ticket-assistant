@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能铁路票务助手</title>
+    <style>
+        :root {
+            --bg: #eef2f5;
+            --panel: #ffffff;
+            --text: #17212b;
+            --muted: #6b7682;
+            --line: #d9e1e8;
+            --rail: #155e75;
+            --green: #18815d;
+            --red: #c2413b;
+            --amber: #b7791f;
+            --shadow: 0 12px 30px rgba(20, 35, 50, .10);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            background:
+                linear-gradient(90deg, rgba(21, 94, 117, .07) 1px, transparent 1px) 0 0 / 28px 28px,
+                linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+        }
+
+        button, input {
+            font: inherit;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr) 330px;
+            gap: 14px;
+            height: 100vh;
+            padding: 14px;
+        }
+
+        .sidebar, .chat, .orders {
+            min-height: 0;
+            background: rgba(255, 255, 255, .94);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar, .orders {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            color: white;
+            background: var(--rail);
+            border-radius: 6px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.2;
+        }
+
+        .brand span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .icon-btn, .primary-btn, .ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: .15s ease;
+        }
+
+        .icon-btn {
+            flex: 0 0 36px;
+            width: 36px;
+            height: 36px;
+            background: #fff;
+        }
+
+        .primary-btn {
+            height: 40px;
+            padding: 0 14px;
+            color: white;
+            border-color: var(--rail);
+            background: var(--rail);
+        }
+
+        .ghost-btn {
+            height: 34px;
+            padding: 0 10px;
+            color: var(--text);
+            background: #fff;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(20, 35, 50, .10);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .session-list, .order-list {
+            min-height: 0;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .session-item, .order-item {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            text-align: left;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .session-item {
+            cursor: pointer;
+        }
+
+        .session-item.active {
+            border-color: var(--rail);
+            background: #e8f6fa;
+        }
+
+        .session-title, .order-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        .session-title span, .order-title span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .meta {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .chat {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            overflow: hidden;
+        }
+
+        .chat-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(90deg, rgba(21, 94, 117, .08), rgba(24, 129, 93, .08));
+        }
+
+        .chat-title {
+            min-width: 0;
+        }
+
+        .chat-title strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-title span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .messages {
+            overflow: auto;
+            padding: 18px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 14px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: min(680px, 82%);
+            padding: 11px 13px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #fff;
+        }
+
+        .message.user .bubble {
+            color: white;
+            border-color: var(--rail);
+            background: var(--rail);
+        }
+
+        .composer {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            padding: 14px;
+            border-top: 1px solid var(--line);
+            background: #f8fafc;
+        }
+
+        .composer input {
+            width: 100%;
+            min-width: 0;
+            height: 42px;
+            padding: 0 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            outline: none;
+            background: white;
+        }
+
+        .composer input:focus {
+            border-color: var(--rail);
+            box-shadow: 0 0 0 3px rgba(21, 94, 117, .12);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .panel-title strong {
+            font-size: 16px;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .danger-btn {
+            height: 36px;
+            padding: 0 10px;
+            color: var(--red);
+            border: 1px solid rgba(194, 65, 59, .35);
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .danger-btn:hover {
+            color: #fff;
+            border-color: var(--red);
+            background: var(--red);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
+            border-radius: 999px;
+            color: white;
+            font-size: 12px;
+            background: var(--green);
+        }
+
+        .status.refunded {
+            background: var(--red);
+        }
+
+        .empty {
+            display: grid;
+            min-height: 140px;
+            place-items: center;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .train-line {
+            height: 8px;
+            margin: 12px 16px 0;
+            border-radius: 99px;
+            background:
+                repeating-linear-gradient(90deg, var(--rail) 0 28px, #fff 28px 38px),
+                var(--rail);
+            box-shadow: inset 0 0 0 1px rgba(21, 94, 117, .2);
+        }
+
+        svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        @media (max-width: 1060px) {
+            .app {
+                grid-template-columns: 230px minmax(0, 1fr);
+            }
+
+            .orders {
+                display: none;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .app {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .sidebar, .orders {
+                min-height: 260px;
+            }
+
+            .orders {
+                display: flex;
+            }
+
+            .chat {
+                min-height: 620px;
+            }
+
+            .chat-head {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .quick-actions {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="app">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M7 4h10a3 3 0 0 1 3 3v7a4 4 0 0 1-4 4l2 2v1h-2.5l-3-3h-1l-3 3H6v-1l2-2a4 4 0 0 1-4-4V7a3 3 0 0 1 3-3Z" stroke="currentColor" stroke-width="1.7"/>
+                    <path d="M8 8h8M7 13h3m4 0h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1>智能铁路票务助手</h1>
+                <span>12345 Railway Support</span>
+            </div>
+        </div>
+        <div class="train-line"></div>
+        <div class="toolbar">
+            <button class="primary-btn" id="newSessionBtn" title="新建会话">＋ 新会话</button>
+            <button class="icon-btn" id="renameSessionBtn" title="重命名当前会话">✎</button>
+            <button class="icon-btn" id="deleteSessionBtn" title="删除当前会话">×</button>
+        </div>
+        <div class="session-list" id="sessionList"></div>
+    </aside>
+
+    <section class="chat">
+        <header class="chat-head">
+            <div class="chat-title">
+                <strong id="currentTitle">准备连接</strong>
+                <span id="currentMeta">端口 19999 · 会话隔离 · 流式输出</span>
+            </div>
+            <div class="quick-actions">
+                <button class="ghost-btn" data-prompt="查询我的订单">订单</button>
+                <button class="ghost-btn" data-prompt="我要购票">购票</button>
+                <button class="ghost-btn" data-prompt="我要退票">退票</button>
+                <button class="ghost-btn" data-prompt="查询广州天气">天气</button>
+            </div>
+        </header>
+        <div class="messages" id="messages"></div>
+        <form class="composer" id="chatForm">
+            <input id="messageInput" autocomplete="off" placeholder="输入：我要购票 / 我要退票 / 查询广州天气">
+            <button class="primary-btn" id="sendBtn" type="submit">发送</button>
+        </form>
+    </section>
+
+    <aside class="orders">
+        <div class="panel-title">
+            <strong>订单记录</strong>
+            <div class="panel-actions">
+                <button class="danger-btn" id="clearDemoDataBtn" title="清空订单和退票记录，不删除聊天">清空</button>
+                <button class="icon-btn" id="refreshOrdersBtn" title="刷新订单">↻</button>
+            </div>
+        </div>
+        <div class="order-list" id="orderList"></div>
+    </aside>
+</main>
+
+<script>
+    const state = {
+        sessions: [],
+        currentSessionId: null,
+        streaming: false
+    };
+
+    const els = {
+        sessionList: document.querySelector('#sessionList'),
+        messages: document.querySelector('#messages'),
+        orderList: document.querySelector('#orderList'),
+        currentTitle: document.querySelector('#currentTitle'),
+        currentMeta: document.querySelector('#currentMeta'),
+        messageInput: document.querySelector('#messageInput'),
+        sendBtn: document.querySelector('#sendBtn')
+    };
+
+    const API_BASE = location.protocol === 'file:' ? 'http://127.0.0.1:19999' : '';
+
+    function apiUrl(path) {
+        return `${API_BASE}${path}`;
+    }
+
+    async function api(path, options = {}) {
+        let response;
+        try {
+            response = await fetch(apiUrl(path), {
+                headers: {'Content-Type': 'application/json'},
+                ...options
+            });
+        } catch (error) {
+            throw new Error('连接后端失败：请先运行项目，再打开 http://127.0.0.1:19999/index.html');
+        }
+        let payload;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            throw new Error('服务返回格式异常：请确认后端已正常启动，并使用 http://127.0.0.1:19999/index.html 访问项目');
+        }
+        if (!payload.success) {
+            throw new Error(payload.message || '请求失败');
+        }
+        return payload.data;
+    }
+
+    function fmtTime(value) {
+        if (!value) return '';
+        return String(value).replace('T', ' ').slice(0, 16);
+    }
+
+    async function loadSessions() {
+        state.sessions = await api('/api/session/list');
+        if (state.sessions.length === 0) {
+            const created = await api('/api/session', {
+                method: 'POST',
+                body: JSON.stringify({title: '新会话'})
+            });
+            state.sessions = [created];
+        }
+        if (!state.currentSessionId || !state.sessions.some(item => item.id === state.currentSessionId)) {
+            state.currentSessionId = state.sessions[0].id;
+        }
+        renderSessions();
+        await loadHistory();
+    }
+
+    function renderSessions() {
+        els.sessionList.innerHTML = '';
+        for (const session of state.sessions) {
+            const button = document.createElement('button');
+            button.className = 'session-item' + (session.id === state.currentSessionId ? ' active' : '');
+            button.innerHTML = `
+                <div class="session-title">
+                    <span>${escapeHtml(session.title)}</span>
+                </div>
+                <div class="meta">${fmtTime(session.updateTime || session.createTime)}</div>
+            `;
+            button.addEventListener('click', () => selectSession(session.id));
+            els.sessionList.appendChild(button);
+        }
+        const current = state.sessions.find(item => item.id === state.currentSessionId);
+        els.currentTitle.textContent = current ? current.title : '未选择会话';
+        els.currentMeta.textContent = current ? `会话 ${current.id} · 历史消息独立保存` : '请选择会话';
+    }
+
+    async function selectSession(id) {
+        state.currentSessionId = id;
+        renderSessions();
+        await loadHistory();
+    }
+
+    async function loadHistory() {
+        if (!state.currentSessionId) return;
+        const messages = await api(`/api/chat/history/${state.currentSessionId}`);
+        els.messages.innerHTML = '';
+        for (const message of messages) {
+            appendMessage(message.role, message.content);
+        }
+        scrollMessages();
+    }
+
+    function appendMessage(role, content = '') {
+        const wrapper = document.createElement('div');
+        wrapper.className = `message ${role}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = content;
+        wrapper.appendChild(bubble);
+        els.messages.appendChild(wrapper);
+        scrollMessages();
+        return bubble;
+    }
+
+    async function sendMessage(text) {
+        if (!state.currentSessionId || state.streaming || !text.trim()) return;
+        state.streaming = true;
+        els.sendBtn.disabled = true;
+        appendMessage('user', text);
+        const assistantBubble = appendMessage('assistant', '');
+        const url = apiUrl(`/api/chat/stream?sessionId=${encodeURIComponent(state.currentSessionId)}&message=${encodeURIComponent(text)}`);
+        const source = new EventSource(url);
+
+        source.onmessage = (event) => {
+            assistantBubble.textContent += event.data;
+            scrollMessages();
+        };
+        source.onerror = async () => {
+            source.close();
+            state.streaming = false;
+            els.sendBtn.disabled = false;
+            try {
+                await Promise.all([loadSessions(), loadOrders()]);
+            } catch (error) {
+                assistantBubble.textContent = error.message;
+            }
+        };
+    }
+
+    async function loadOrders() {
+        const orders = await api('/api/order/list');
+        els.orderList.innerHTML = '';
+        if (orders.length === 0) {
+            els.orderList.innerHTML = '<div class="empty">暂无订单</div>';
+            return;
+        }
+        for (const order of orders) {
+            const item = document.createElement('div');
+            item.className = 'order-item';
+            const refunded = order.status === '已退票';
+            item.innerHTML = `
+                <div class="order-title">
+                    <span>${escapeHtml(order.orderNo)}</span>
+                    <em class="status ${refunded ? 'refunded' : ''}">${escapeHtml(order.status)}</em>
+                </div>
+                <div class="meta">${escapeHtml(order.passengerName)} · ${escapeHtml(order.trainNo)} · ${escapeHtml(order.travelDate)}</div>
+                <div class="meta">${escapeHtml(order.seatType)} ${escapeHtml(order.seatNo)} · ¥${order.price}</div>
+            `;
+            els.orderList.appendChild(item);
+        }
+    }
+
+    function scrollMessages() {
+        els.messages.scrollTop = els.messages.scrollHeight;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]);
+    }
+
+    document.querySelector('#chatForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const text = els.messageInput.value.trim();
+        els.messageInput.value = '';
+        await sendMessage(text);
+    });
+
+    document.querySelectorAll('[data-prompt]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const prompt = button.dataset.prompt;
+            els.messageInput.value = '';
+            await sendMessage(prompt);
+        });
+    });
+
+    document.querySelector('#newSessionBtn').addEventListener('click', async () => {
+        const session = await api('/api/session', {
+            method: 'POST',
+            body: JSON.stringify({title: '新会话 ' + new Date().toLocaleTimeString()})
+        });
+        state.currentSessionId = session.id;
+        await loadSessions();
+    });
+
+    document.querySelector('#renameSessionBtn').addEventListener('click', async () => {
+        const current = state.sessions.find(item => item.id === state.currentSessionId);
+        if (!current) return;
+        const title = prompt('会话名称', current.title);
+        if (!title || !title.trim()) return;
+        await api(`/api/session/${current.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({title: title.trim()})
+        });
+        await loadSessions();
+    });
+
+    document.querySelector('#deleteSessionBtn').addEventListener('click', async () => {
+        const current = state.sessions.find(item => item.id === state.currentSessionId);
+        if (!current || !confirm(`删除会话“${current.title}”？`)) return;
+        await api(`/api/session/${current.id}`, {method: 'DELETE'});
+        state.currentSessionId = null;
+        await loadSessions();
+    });
+
+    document.querySelector('#refreshOrdersBtn').addEventListener('click', loadOrders);
+
+    document.querySelector('#clearDemoDataBtn').addEventListener('click', async () => {
+        const text = prompt('将清空所有订单和退票记录，聊天历史不会删除。\n请输入“清空”确认操作：');
+        if (text !== '清空') return;
+        await api('/api/order/demo-data', {method: 'DELETE'});
+        await loadOrders();
+        appendMessage('assistant', '演示订单数据已清空。聊天历史仍然保留。');
+    });
+
+    loadSessions()
+        .then(loadOrders)
+        .catch(error => {
+            els.messages.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+        });
+</script>
+</body>
+</html>
