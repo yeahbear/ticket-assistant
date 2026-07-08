@@ -14,6 +14,7 @@ public class IntentParser {
     private static final Pattern ORDER_NO = Pattern.compile("(?<![A-Za-z0-9])TA\\d{10,}(?![A-Za-z0-9])", Pattern.CASE_INSENSITIVE);
     private static final Pattern NAME = Pattern.compile("(?:乘车人姓名|旅客姓名|姓名|乘车人|旅客|我是|我叫)[:：是\\s]*([\\u4e00-\\u9fa5]{2,6})");
     private static final Pattern CITY = Pattern.compile("([\\u4e00-\\u9fa5]{2,8})(?:市)?(?:今天|明天|后天)?天气");
+    private static final Pattern ROUTE = Pattern.compile("([\\u4e00-\\u9fa5]{2,8})(?:到|至|去)([\\u4e00-\\u9fa5]{2,8}?)(?:的)?(?:火车票|车票|余票|票|\\s|，|,|$)");
 
     private IntentParser() {
     }
@@ -38,6 +39,11 @@ public class IntentParser {
 
     public static boolean isWeatherIntent(String text) {
         return text.contains("天气");
+    }
+
+    public static boolean isTrainTicketSearchIntent(String text) {
+        return parseRoute(text) != null
+                && (text.contains("火车票") || text.contains("车票") || text.contains("余票") || text.contains("查票"));
     }
 
     public static boolean isIdentityQuestion(String text) {
@@ -87,6 +93,7 @@ public class IntentParser {
         String trainNo = upper(lastMatch(TRAIN_NO, text));
         LocalDate travelDate = parseDate(lastMatch(DATE, text));
         String seatType = parseSeatType(text);
+        RouteInfo route = parseRoute(text);
 
         List<String> missing = new ArrayList<>();
         if (passengerName == null) {
@@ -102,9 +109,31 @@ public class IntentParser {
             missing.add("乘车日期，格式如2026-06-25");
         }
         if (seatType == null) {
-            missing.add("座位类型：硬座/软座/硬卧/软卧");
+            missing.add("座位类型：商务座/一等座/二等座/硬座/软座/硬卧/软卧/无座");
         }
-        return new BookingInfo(passengerName, idCard, trainNo, travelDate, seatType, missing);
+        return new BookingInfo(
+                passengerName,
+                idCard,
+                trainNo,
+                travelDate,
+                seatType,
+                route == null ? null : route.depart(),
+                route == null ? null : route.arrive(),
+                missing
+        );
+    }
+
+    public static RouteInfo parseRoute(String text) {
+        Matcher matcher = ROUTE.matcher(text);
+        if (!matcher.find()) {
+            return null;
+        }
+        String depart = cleanRouteCity(matcher.group(1));
+        String arrive = cleanRouteCity(matcher.group(2));
+        if (depart.isBlank() || arrive.isBlank() || depart.equals(arrive)) {
+            return null;
+        }
+        return new RouteInfo(depart, arrive);
     }
 
     public static RefundInfo parseRefund(String text) {
@@ -148,7 +177,7 @@ public class IntentParser {
     private static String parseSeatType(String text) {
         String latest = null;
         int latestIndex = -1;
-        for (String seatType : List.of("硬座", "软座", "硬卧", "软卧")) {
+        for (String seatType : List.of("商务座", "一等座", "二等座", "硬座", "软座", "硬卧", "软卧", "无座")) {
             int index = text.lastIndexOf(seatType);
             if (index > latestIndex) {
                 latest = seatType;
@@ -156,6 +185,19 @@ public class IntentParser {
             }
         }
         return latest;
+    }
+
+    private static String cleanRouteCity(String value) {
+        return value == null ? "" : value
+                .replace("查询", "")
+                .replace("查", "")
+                .replace("我要买", "")
+                .replace("我要订", "")
+                .replace("我要购", "")
+                .replace("从", "")
+                .replace("出发", "")
+                .replace("市", "")
+                .trim();
     }
 
     private static LocalDate parseDate(String value) {

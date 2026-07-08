@@ -105,7 +105,7 @@ class TicketOrderServiceTest {
                 "440111199901011234",
                 "G101",
                 LocalDate.now().plusDays(10),
-                "商务座"
+                "站票"
         )))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("座位类型必须是");

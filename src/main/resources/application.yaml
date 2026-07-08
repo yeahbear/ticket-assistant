@@ -36,3 +36,10 @@ weather:
     api-key: ${QWEATHER_API_KEY:}
     api-host: ${QWEATHER_API_HOST:https://devapi.qweather.com}
     timeout-seconds: ${QWEATHER_TIMEOUT_SECONDS:8}
+
+railway:
+  apihz:
+    developer-id: ${APIHZ_DEVELOPER_ID:}
+    developer-key: ${APIHZ_DEVELOPER_KEY:}
+    base-url: ${APIHZ_12306_BASE_URL:http://101.35.2.25/api/12306}
+    timeout-seconds: ${APIHZ_TIMEOUT_SECONDS:12}

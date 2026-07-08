@@ -77,6 +77,35 @@ class AssistantServiceTest {
     }
 
     @Test
+    void trainTicketSearchUsesLocalAssistantEvenWhenDeepSeekIsEnabled() {
+        SessionService sessionService = mock(SessionService.class);
+        ChatMemoryService chatMemoryService = mock(ChatMemoryService.class);
+        LocalAssistantService localAssistantService = mock(LocalAssistantService.class);
+        DeepSeekClient deepSeekClient = mock(DeepSeekClient.class);
+        AssistantService assistantService = new AssistantService(
+                sessionService,
+                chatMemoryService,
+                localAssistantService,
+                deepSeekClient,
+                true
+        );
+
+        ChatSession session = new ChatSession();
+        session.setId(11L);
+        when(sessionService.requireSession(11L)).thenReturn(session);
+        when(chatMemoryService.history(11L)).thenReturn(List.of());
+        when(deepSeekClient.enabled()).thenReturn(true);
+        when(localAssistantService.answer(eq("查询广州到上海 2026-07-15 车票"), anyList())).thenReturn("查询到真实余票");
+
+        StepVerifier.create(assistantService.stream(11L, "查询广州到上海 2026-07-15 车票").collectList())
+                .expectNextMatches(parts -> String.join("", parts).contains("真实余票"))
+                .verifyComplete();
+
+        verify(localAssistantService).answer(eq("查询广州到上海 2026-07-15 车票"), anyList());
+        verify(deepSeekClient, never()).stream(anyString(), anyList());
+    }
+
+    @Test
     void incompleteBookingContinuationUsesLocalAssistantEvenWhenDeepSeekIsEnabled() {
         SessionService sessionService = mock(SessionService.class);
         ChatMemoryService chatMemoryService = mock(ChatMemoryService.class);

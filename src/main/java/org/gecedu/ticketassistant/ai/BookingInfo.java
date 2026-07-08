@@ -9,6 +9,8 @@ public record BookingInfo(
         String trainNo,
         LocalDate travelDate,
         String seatType,
+        String depart,
+        String arrive,
         List<String> missing
 ) {
     public boolean complete() {

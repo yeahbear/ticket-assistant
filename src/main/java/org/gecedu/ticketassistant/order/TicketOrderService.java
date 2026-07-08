@@ -50,6 +50,11 @@ public class TicketOrderService {
 
     @Transactional
     public TicketOrder book(BookingRequest request) {
+        return book(request, null);
+    }
+
+    @Transactional
+    public TicketOrder book(BookingRequest request, BigDecimal realPrice) {
         BookingRequest cleanRequest = validateAndNormalizeBookingRequest(request);
         validateBookingDeadline(cleanRequest.travelDate());
         String trainNo = cleanRequest.trainNo();
@@ -62,7 +67,7 @@ public class TicketOrderService {
         order.setTravelDate(cleanRequest.travelDate());
         order.setSeatType(cleanRequest.seatType());
         order.setSeatNo(createSeatNo(trainNo, cleanRequest.travelDate(), cleanRequest.seatType()));
-        order.setPrice(calculatePrice(cleanRequest.seatType()));
+        order.setPrice(realPrice == null ? calculatePrice(cleanRequest.seatType()) : realPrice);
         order.setStatus("已订票");
         order.setBookTime(LocalDateTime.now());
         order.setCreateTime(LocalDateTime.now());
@@ -177,9 +182,9 @@ public class TicketOrderService {
 
     private void validateSeatType(String seatType) {
         switch (seatType) {
-            case "硬座", "软座", "硬卧", "软卧" -> {
+            case "商务座", "一等座", "二等座", "硬座", "软座", "硬卧", "软卧", "无座" -> {
             }
-            default -> throw new IllegalArgumentException("座位类型必须是：硬座/软座/硬卧/软卧");
+            default -> throw new IllegalArgumentException("座位类型必须是：商务座/一等座/二等座/硬座/软座/硬卧/软卧/无座");
         }
     }
 
@@ -214,11 +219,15 @@ public class TicketOrderService {
 
     private BigDecimal calculatePrice(String seatType) {
         return switch (seatType) {
+            case "商务座" -> new BigDecimal("960.00");
+            case "一等座" -> new BigDecimal("680.00");
+            case "二等座" -> new BigDecimal("420.00");
             case "软卧" -> new BigDecimal("560.00");
             case "硬卧" -> new BigDecimal("320.00");
             case "软座" -> new BigDecimal("210.00");
             case "硬座" -> new BigDecimal("128.00");
-            default -> throw new IllegalArgumentException("座位类型必须是：硬座/软座/硬卧/软卧");
+            case "无座" -> new BigDecimal("128.00");
+            default -> throw new IllegalArgumentException("座位类型必须是：商务座/一等座/二等座/硬座/软座/硬卧/软卧/无座");
         };
     }
 

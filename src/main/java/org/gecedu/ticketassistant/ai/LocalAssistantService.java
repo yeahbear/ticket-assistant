@@ -27,6 +27,18 @@ public class LocalAssistantService {
     public String answer(String message, List<ChatMessage> history) {
         String latestAssistant = latestAssistant(history);
 
+        if (IntentParser.isTrainTicketSearchIntent(message)) {
+            RouteInfo route = IntentParser.parseRoute(message);
+            BookingInfo info = IntentParser.parseBooking(message);
+            if (route == null) {
+                return "请告诉我要查询哪两个城市之间的车票，例如：查询广州到上海 2026-07-15 车票。";
+            }
+            if (info.travelDate() == null) {
+                return "请补充乘车日期，格式如 2026-07-15。";
+            }
+            return ticketToolService.queryTrainTickets(route.depart(), route.arrive(), info.travelDate().toString()).message();
+        }
+
         if (IntentParser.isWeatherIntent(message)) {
             String city = IntentParser.parseWeatherCity(message);
             if (city == null || city.isBlank()) {
@@ -70,7 +82,8 @@ public class LocalAssistantService {
                     + "2. 身份证号\n"
                     + "3. 车次\n"
                     + "4. 乘车日期，格式如 2026-06-25\n"
-                    + "5. 座位类型：硬座 / 软座 / 硬卧 / 软卧\n\n"
+                    + "5. 座位类型：商务座 / 一等座 / 二等座 / 硬座 / 软座 / 硬卧 / 软卧 / 无座\n"
+                    + "如需真实余票校验，可同时提供出发地和目的地，例如：广州到上海。\n\n"
                     + "当前还缺：" + String.join("、", info.missing()) + "\n"
                     + "请一次性补充这些信息，我会为您生成购票订单。";
         }
@@ -80,7 +93,9 @@ public class LocalAssistantService {
                     info.idCard(),
                     info.trainNo(),
                     info.travelDate().toString(),
-                    info.seatType()
+                    info.seatType(),
+                    info.depart(),
+                    info.arrive()
             );
             return result.message();
         } catch (IllegalArgumentException ex) {

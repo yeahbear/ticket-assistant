@@ -11,6 +11,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -61,6 +62,19 @@ class LocalAssistantServiceTest {
     }
 
     @Test
+    void trainTicketSearchUsesRealTicketTool() {
+        TicketToolService ticketToolService = mock(TicketToolService.class);
+        when(ticketToolService.queryTrainTickets("广州", "上海", "2026-07-15"))
+                .thenReturn(new ToolResult(true, "查询到 广州 到 上海 在 2026-07-15 的真实余票"));
+        LocalAssistantService service = new LocalAssistantService(new KnowledgeBaseService(), ticketToolService);
+
+        String answer = service.answer("查询广州到上海 2026-07-15 车票", List.of());
+
+        assertThat(answer).contains("真实余票");
+        verify(ticketToolService).queryTrainTickets("广州", "上海", "2026-07-15");
+    }
+
+    @Test
     void refundSelectionUsesOrderNoFromPreviousCandidateList() {
         TicketToolService ticketToolService = mock(TicketToolService.class);
         when(ticketToolService.refundTicket("TA1783000000000222", null, null))
@@ -93,13 +107,13 @@ class LocalAssistantServiceTest {
 
         assertThat(answer).contains("退票成功");
         verify(ticketToolService).refundTicket("TA1783320038896383", null, null);
-        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
     void bookingContinuationStillBooksTicket() {
         TicketToolService ticketToolService = mock(TicketToolService.class);
-        when(ticketToolService.bookTicket(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(ticketToolService.bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), nullable(String.class), nullable(String.class)))
                 .thenReturn(new ToolResult(true, "购票成功，订单号：TA1783321000000001"));
         LocalAssistantService service = new LocalAssistantService(new KnowledgeBaseService(), ticketToolService);
 
@@ -109,14 +123,14 @@ class LocalAssistantServiceTest {
         ));
 
         assertThat(answer).contains("购票成功");
-        verify(ticketToolService).bookTicket("李四", "440111199901011234", "G102", "2026-08-25", "硬卧");
+        verify(ticketToolService).bookTicket("李四", "440111199901011234", "G102", "2026-08-25", "硬卧", null, null);
         verify(ticketToolService, never()).refundTicket(anyString(), anyString(), anyString());
     }
 
     @Test
     void bookingServiceErrorReturnsReadableMessage() {
         TicketToolService ticketToolService = mock(TicketToolService.class);
-        when(ticketToolService.bookTicket(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(ticketToolService.bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), nullable(String.class), nullable(String.class)))
                 .thenThrow(new IllegalArgumentException("已存在相同乘车人、车次、日期和座位类型的有效订单，请勿重复购票"));
         LocalAssistantService service = new LocalAssistantService(new KnowledgeBaseService(), ticketToolService);
 
@@ -139,7 +153,7 @@ class LocalAssistantServiceTest {
         ));
 
         assertThat(answer).contains("订票需要提供以下信息", "当前还缺");
-        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -165,7 +179,7 @@ class LocalAssistantServiceTest {
         ));
 
         assertThat(answer).contains("身份证号", "车次", "乘车日期", "座位类型");
-        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -212,7 +226,7 @@ class LocalAssistantServiceTest {
         ));
 
         assertThat(answer).contains("王五");
-        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -225,7 +239,7 @@ class LocalAssistantServiceTest {
         ));
 
         assertThat(answer).contains("智能票务助手");
-        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(ticketToolService, never()).bookTicket(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     private ChatMessage message(String role, String content) {

@@ -72,6 +72,7 @@ public class AssistantService {
         boolean bookingContinuation = waitingForBookingInfo && IntentParser.hasBookingInfo(message);
         boolean refundContinuation = waitingForRefundInfo && (IntentParser.hasRefundInfo(message) || IntentParser.isSelectionReply(message));
         boolean toolIntent = IntentParser.isWeatherIntent(message)
+                || IntentParser.isTrainTicketSearchIntent(message)
                 || IntentParser.isOrderQueryIntent(message)
                 || IntentParser.isRefundIntent(message)
                 || IntentParser.isBookingIntent(message)
