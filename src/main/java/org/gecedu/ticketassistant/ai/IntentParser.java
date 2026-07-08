@@ -42,8 +42,7 @@ public class IntentParser {
     }
 
     public static boolean isTrainTicketSearchIntent(String text) {
-        return parseRoute(text) != null
-                && (text.contains("火车票") || text.contains("车票") || text.contains("余票") || text.contains("查票"));
+        return text.contains("火车票") || text.contains("车票") || text.contains("余票") || text.contains("查票");
     }
 
     public static boolean isIdentityQuestion(String text) {

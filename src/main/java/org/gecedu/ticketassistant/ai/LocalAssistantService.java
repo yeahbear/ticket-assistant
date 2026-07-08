@@ -31,7 +31,7 @@ public class LocalAssistantService {
             RouteInfo route = IntentParser.parseRoute(message);
             BookingInfo info = IntentParser.parseBooking(message);
             if (route == null) {
-                return "请告诉我要查询哪两个城市之间的车票，例如：查询广州到上海 2026-07-15 车票。";
+                return "请告诉我要查询哪两个城市之间、哪一天的余票，例如：查询广州到上海 2026-07-15 车票。";
             }
             if (info.travelDate() == null) {
                 return "请补充乘车日期，格式如 2026-07-15。";

@@ -32,6 +32,12 @@ class IntentParserTest {
     }
 
     @Test
+    void detectTrainTicketSearchWithoutRoute() {
+        assertThat(IntentParser.isTrainTicketSearchIntent("查询余票")).isTrue();
+        assertThat(IntentParser.parseRoute("查询余票")).isNull();
+    }
+
+    @Test
     void reportMissingBookingFields() {
         BookingInfo info = IntentParser.parseBooking("我要买票，姓名李四");
 

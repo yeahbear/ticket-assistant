@@ -75,6 +75,17 @@ class LocalAssistantServiceTest {
     }
 
     @Test
+    void trainTicketSearchWithoutRouteAsksForRouteAndDate() {
+        TicketToolService ticketToolService = mock(TicketToolService.class);
+        LocalAssistantService service = new LocalAssistantService(new KnowledgeBaseService(), ticketToolService);
+
+        String answer = service.answer("查询余票", List.of());
+
+        assertThat(answer).contains("哪两个城市", "哪一天");
+        verify(ticketToolService, never()).queryTrainTickets(anyString(), anyString(), anyString());
+    }
+
+    @Test
     void refundSelectionUsesOrderNoFromPreviousCandidateList() {
         TicketToolService ticketToolService = mock(TicketToolService.class);
         when(ticketToolService.refundTicket("TA1783000000000222", null, null))
